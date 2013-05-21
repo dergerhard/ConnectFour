@@ -129,7 +129,7 @@ void PlayerCube::setState(Geometry *g, Player p, int i1, int i2, int i3)
         state = p;
 
         qreal width, height, depth;
-        width = height = depth = Settings::CubeSize;
+        width = height = depth = Sett::ings().getReal("3d/cubesize");
 
         enum { bl, br, tr, tl };
         Patch *fb = new Patch(g);
@@ -164,8 +164,8 @@ void PlayerCube::setState(Geometry *g, Player p, int i1, int i2, int i3)
         this->i2 = i2;
         this->i3 = i3;
 
-        qreal cs = Settings::CubeSize;
-        qreal ef = Settings::EdgeFactor;
+        qreal cs = Sett::ings().getReal("3d/cubesize");
+        qreal ef = Sett::ings().getReal("3d/edgefactor");
 
         //set position
         translate(QVector3D(i1*cs*ef, i2*cs*ef + cs*ef/2, i3*cs*ef));

@@ -3,23 +3,36 @@
 
 #include <QtGlobal>
 #include <QColor>
+#include <QSettings>
+#include <QString>
 
-class Settings
-{
+
+class Sett{
 private:
-    Settings();
+    static QSettings settings;
+    Sett() {  }
+    // Dont forget to declare these two. You want to make sure they
+    // are unaccessable otherwise you may accidently get copies of
+    // your singleton appearing.
+    Sett(Sett const&);              // Don't Implement
+    void operator=(Sett const&); // Don't implement
+
 public:
-    static const qreal CubeSize = 0.1;      // lenght of the edge of a cube
-    static const qreal EdgeFactor = 1.2; // the risize-factor for the field for one cubes (if that is 1, there will be no space between cubes)
-    static const qreal ColumnWidth =0.005; // width of the orientational column
-    //static const QColor ColumnColor(255,255,255,100);
-    static const qreal SCALE = 0.001;
+    static Sett& ings()
+    {
+        static Sett    instance; // Guaranteed to be destroyed.
+                                  // Instantiated on first use.
+        return instance;
+    }
 
-    //Helper animation settings (vertical bar)
-    static const int HAnimTime = 400;
-    static const int HAnimPause = 2000;
-    static const int HAnimStep = 10;
+    static int getInt(const QString &val) { return settings.value(val).toInt(); }
+    static qreal getReal(const QString &val) { return settings.value(val).toReal(); }
+    static QString getString(const QString &val) { return settings.value(val).toString();}
 
+    static void setInt(const QString &key, int val) { settings.setValue(key, val); }
+    static void setReal(const QString &key, qreal val) { settings.setValue(key, val); }
+    static void setString(const QString &key, const QString &val) { settings.setValue(key, val); }
 };
+
 
 #endif // SETTINGS_H

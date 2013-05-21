@@ -40,23 +40,18 @@
 
 #include "connectfourwidget.h"
 
-
-
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE  0x809D
 #endif
 
 
-
-
 ConnectFourWidget::ConnectFourWidget(QWidget *parent)
     : QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
 {
-    game = 0;
-    xRot = 0;
+    /*xRot = 0;
     yRot = 0;
     zRot = 0;
-    scale = 1.0f;
+    scale = 1.0f;*/
 }
 
 
@@ -67,7 +62,7 @@ ConnectFourWidget::~ConnectFourWidget()
 
 void ConnectFourWidget::setCube(int x, int y, int z, Player p)
 {
-    game->setCube(x,y,z,p);
+    //game->setCube(x,y,z,p);
     //resizeGL(2000, 2000);
     updateGL();
 }
@@ -75,7 +70,7 @@ void ConnectFourWidget::setCube(int x, int y, int z, Player p)
 
 QSize ConnectFourWidget::minimumSizeHint() const
 {
-    return QSize(800, 600);
+    return QSize(400, 400);
 }
 
 
@@ -132,12 +127,13 @@ void ConnectFourWidget::setZRotation(int angle)
 
 void ConnectFourWidget::initializeGL()
 {
+    //if you want to set it to default background grey:
     //QPalette obj;
     //qglClearColor(obj.window().color());
     qglClearColor(QColor("black"));
 
 
-    game = new ConnectFourGame(this, 7,8,9);
+    //game = new ConnectFourGame(this, "sepp", "hansgame", 7,8,9);
 
     //alpha channel
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -163,6 +159,7 @@ void ConnectFourWidget::initializeGL()
 
 void ConnectFourWidget::paintGL()
 {
+    //resizeGL(this->parentWidget()->width(), this->parentWidget()->height());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     glTranslatef(0.0, 0.0, -10.0);
@@ -170,7 +167,7 @@ void ConnectFourWidget::paintGL()
     glRotatef(yRot / 16.0, 0.0, 1.0, 0.0);
     glRotatef(zRot / 16.0, 0.0, 0.0, 1.0);
     glScalef(scale, scale, scale);
-    game->draw();
+    draw();
 }
 
 
@@ -190,22 +187,12 @@ void ConnectFourWidget::resizeGL(int width, int height)
 
 void ConnectFourWidget::keyPressEvent(QKeyEvent *event)
 {
-    switch (event->key())
-    {
-    case Qt::Key_Left:  game->moveSelector(MINUSX); break;
-    case Qt::Key_Right: game->moveSelector(PLUSX); break;
-    case Qt::Key_Up: game->moveSelector(MINUSZ); break;
-    case Qt::Key_Down: game->moveSelector(PLUSZ); break;
-    case Qt::Key_Space:
-        if (game->getTurn()==PlayerA)
-            game->putCubeOnTopOfSelector(PlayerA);
-        else game->putCubeOnTopOfSelector(PlayerB); break;
-    case Qt::Key_Shift: game->toggleDetails(); break;
-    case Qt::Key_Plus: scale = scale*1.2f; updateGL(); break;
-    case Qt::Key_Minus: scale = scale/1.2f; updateGL(); break;
+    //if (game!=0)
+    //{
 
-    }
-    game->isThereAWinner();
+        //game->isThereAWinner();
+    //}
+
 
 }
 

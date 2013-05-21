@@ -1,7 +1,7 @@
 #ifndef CONNECTFOURWIDGET_H
 #define CONNECTFOURWIDGET_H
 
-#include "connectfourgame.h"
+//#include "connectfourgame.h"
 #include "graphicobjects.h"
 
 #include <QGLWidget>
@@ -27,10 +27,14 @@ public:
 
     void setCube(int x, int y, int z, Player p);
 
+    virtual void draw()=0;
+
+
 public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
     void setZRotation(int angle);
+    //void newGame(const QString &playerName, const QString &gameName, bool state, int x, int y, int z);
 
 signals:
     void xRotationChanged(int angle);
@@ -46,8 +50,7 @@ protected:
     void wheelEvent(QWheelEvent *event);
     void keyPressEvent(QKeyEvent *event);
 
-private:
-    ConnectFourGame *game;
+    //ConnectFourGame *game;
     int xRot;
     int yRot;
     int zRot;

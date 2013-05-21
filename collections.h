@@ -88,24 +88,24 @@ public:
         //iw=init;
 
         arr = new T**[d1];
-        cout << "d1: " << d1 << " d2: " << d2 << " d3: " << d3 << endl;
+        //cout << "d1: " << d1 << " d2: " << d2 << " d3: " << d3 << endl;
         for (int i=0; i<d1; i++)
         {
-            cout << "at level 1, run " << i << endl;
+            //cout << "at level 1, run " << i << endl;
 
             arr[i] = new T*[d2];
             for (int j=0; j<d2; j++)
             {
-                cout << "at level 2, run " << j << endl;
+                //cout << "at level 2, run " << j << endl;
 
                 arr[i][j] = new T[d3];
                 for (int k=0; k<d3; k++)
                 {
-                    cout << "at level 3, run " << k << endl;
+                    //cout << "at level 3, run " << k << endl;
 
                     if (is_pointer<T>::value)
                     {
-                        cout << "  is pointer, make new" << endl;
+                        //cout << "  is pointer, make new" << endl;
                         arr[i][j][k] = *(new T());
                     }
                     else arr[i][j][k]=T();
@@ -114,7 +114,6 @@ public:
             }
         }
 
-        cout << "build complete" << endl;
     }
 
     ~ArrayDList()
@@ -131,6 +130,7 @@ public:
 
     }
 
+
     void set(T t, int i1, int i2=0, int i3=0)
     {
         //std::cout << "insert at x/y/z: " << i1 << "/" << i2 << "/" << i3 << std::endl;
@@ -139,6 +139,8 @@ public:
             arr[i1][i2][i3] = t;
         }
     }
+
+
 
     T get(int i1, int i2=0, int i3=0)
     {

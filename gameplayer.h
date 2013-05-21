@@ -18,7 +18,7 @@ public:
     virtual QVector3D getNextMove()=0;
 
 private:
-
+    QString playerName;
 signals:
 
 public slots:
