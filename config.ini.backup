@@ -1,0 +1,18 @@
+[ui]
+stylesheet="QWidget{background-color:black; color:white;}QPushButton {background-color: rgb(72,27,250); border-style: outset;border-width: 2px;border-radius: 10px;border-color: beige;font: bold 12px;min-width: 7em;min-height: 2em;padding: 6px;} QPushButton:hover {background-color: red;} QPushButton:pressed {background-color: rgb(170, 0, 0);} QPushButton[enabled=\"false\"] {background-color: rgb(170, 170, 170);}"
+
+[net]
+playername=Hans
+gamename=Hans42
+myip=127.0.0.1
+myport=9091
+indexip=127.0.0.1
+indexport=9090
+
+[3d]
+hanimtime=400
+hanimpause=2000
+hanimstep=10
+cubesize=0.1
+edgefactor=1.2
+columnwidth=0.005
