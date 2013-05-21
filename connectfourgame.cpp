@@ -9,10 +9,15 @@ static const qreal logo_depth = 0.10;
 static const int num_divisions = 32;
 
 
-ConnectFourGame::ConnectFourGame(ConnectFourWidget *parent, int x, int y, int z) : QObject(parent), geom(new Geometry()), DIMX(x), DIMY(y), DIMZ(z)
+ConnectFourGame::ConnectFourGame(QWidget *parent, const QString &playerName, const QString &gameName, int x, int y, int z, Player turn)
+    : ConnectFourWidget(parent), geom(new Geometry()), playerName(playerName),
+      gameName(gameName), DIMX(x), DIMY(y), DIMZ(z), turn(turn)
 {
-    this->parent=parent;
-    turn = PlayerA; // user starts first
+    xRot = 0;
+    yRot = 0;
+    zRot = 0;
+    scale = 1.0f;
+
 
     //make sure, the game has as z-dimension at least 1
     if (z<1)
@@ -34,6 +39,14 @@ ConnectFourGame::ConnectFourGame(ConnectFourWidget *parent, int x, int y, int z)
     selPosX=0;
     selPosZ=0;
     buildGeometry();
+
+    //save moveIDs for later identification with protocol
+    //z*DIMX*DIMY + y*DIMX + x
+    for (int x=0; x<DIMX; x++)
+        for (int y=0; y<DIMY; y++)
+            for (int z=0; z<DIMZ; z++)
+                moveIDs.insert(z*DIMX*DIMY+y*DIMX+x, QVector3D(x,y,z));
+
 }
 
 ConnectFourGame::~ConnectFourGame()
@@ -44,12 +57,41 @@ ConnectFourGame::~ConnectFourGame()
 }
 
 
+QVector3D ConnectFourGame::getMoveFromID(int id, bool onlyIDNoCheck)
+{
+    if (moveIDs.contains(id))
+    {
+        QVector3D m = moveIDs[id];
+        if (onlyIDNoCheck)
+            return m;
+
+        if (logicField->get(m.x(), m.y(), m.z())==NotSet)
+            return m;
+        return QVector3D(-2,-2,-2); //index correct, field already set
+    }
+    return QVector3D(-1,-1,-1); //index incorrect
+}
+
+int ConnectFourGame::getIDFromMove(const QVector3D &move)
+{
+    return (int)move.z()*DIMX*DIMY+move.y()*DIMX+move.x();
+}
+
+Player ConnectFourGame::getFieldState(const QVector3D &move)
+{
+    return logicField->get((int)move.x(),(int)move.y(),(int)move.z());
+}
+
+void ConnectFourGame::setState(bool setOpen)
+{
+    isOpen = setOpen;
+}
 
 void ConnectFourGame::buildGeometry()
 {
-    qreal edge = Settings::CubeSize;
-    qreal colw = Settings::ColumnWidth;
-    qreal ef = Settings::EdgeFactor;
+    qreal edge = Sett::ings().getReal("3d/cubesize");
+    qreal colw = Sett::ings().getReal("3d/columnwidth");
+    qreal ef = Sett::ings().getReal("3d/edgefactor");
 
     int dim2 = DIMZ==0 ? 1 : DIMZ;
 
@@ -97,7 +139,7 @@ void ConnectFourGame::buildGeometry()
 
 
     //create selection helper
-    selectionHelper = new Torus(geom,Settings::CubeSize*0.0005, Settings::CubeSize*0.3, edge*DIMY*ef, 100);
+    selectionHelper = new Torus(geom,Sett::ings().getReal("3d/cubesize")*0.0005, Sett::ings().getReal("3d/cubesize")*0.3, edge*DIMY*ef, 100);
     selectionHelper->setColor(QColor(150,150,150,80));
     selectionHelper->translate(QVector3D(0, edge*DIMY*ef/2, 0));
     selectionHelper->rotate(90.0, QVector3D(1.0,0.0,0.0));
@@ -108,7 +150,7 @@ void ConnectFourGame::buildGeometry()
     selPosZ=0;
 
     //create selection donut
-    selectionDonut = new Torus(geom,Settings::CubeSize*0.0005, Settings::CubeSize*0.32, Settings::CubeSize/5, 100);
+    selectionDonut = new Torus(geom,Sett::ings().getReal("3d/cubesize")*0.0005, Sett::ings().getReal("3d/cubesize")*0.32, Sett::ings().getReal("3d/cubesize")/5, 100);
     selectionDonut->translate(QVector3D(
                                   0,
                                   edge*DIMY*ef,
@@ -118,9 +160,9 @@ void ConnectFourGame::buildGeometry()
     parts << selectionDonut;
 
     //selectionDonut->rotate(10.0, QVector3D(1.0, 0.0, 0.0));
-    wobbleTime = Settings::HAnimTime;
-    wobblePause = Settings::HAnimPause;
-    wobbleTimeStep = Settings::HAnimStep;
+    wobbleTime = Sett::ings().getReal("3d/hanimtime");
+    wobblePause = Sett::ings().getReal("3d/hanimpause");
+    wobbleTimeStep = Sett::ings().getReal("3d/hanimstep");
     donutTimer = new QTimer;
     donutTimer->setInterval(wobbleTimeStep);
     connect(donutTimer, SIGNAL(timeout()), this, SLOT(animSelector()));
@@ -129,7 +171,7 @@ void ConnectFourGame::buildGeometry()
 }
 
 
-void ConnectFourGame::draw() const
+void ConnectFourGame::draw()
 {
     geom->loadArrays();
 
@@ -157,15 +199,15 @@ void ConnectFourGame::draw() const
 void ConnectFourGame::animCubeFlyIn()
 {
     //check if already finished
-    if (animationProgress < DIMY*2*Settings::CubeSize*Settings::EdgeFactor)
+    if (animationProgress < DIMY*2*Sett::ings().getReal("3d/cubesize")*Sett::ings().getReal("3d/edgefactor"))
     {
         PlayerCube *gp = field->get(currentAnimationCube[0],currentAnimationCube[1],currentAnimationCube[2]);
         //move down
-        qreal moveLength = Settings::CubeSize/5;
+        qreal moveLength = Sett::ings().getReal("3d/cubesize")/5;
         gp->translate(QVector3D(0, -moveLength, 0));
         //save again (because arraydlist cant hold pointers)
         //field->set(gp,currentAnimationCube[0],currentAnimationCube[1],currentAnimationCube[2]);
-        parent->updateGL();
+        updateGL();
         animationProgress += moveLength;
     }
     else
@@ -185,7 +227,7 @@ void ConnectFourGame::animSelector()
     qreal runs = (wobbleTime+wobblePause)/wobbleTimeStep;    //til cycle is finishe
     qreal moveRuns = wobbleTime/wobbleTimeStep;                        //number of runs to move it
 
-    qreal step = Settings::CubeSize*Settings::EdgeFactor*DIMY/moveRuns;
+    qreal step = Sett::ings().getReal("3d/cubesize")*Sett::ings().getReal("3d/edgefactor")*DIMY/moveRuns;
 
     if (wobble1==moveRuns)
     {
@@ -207,7 +249,7 @@ void ConnectFourGame::animSelector()
     else wobble1 +=1;
 
 
-    parent->updateGL();
+    updateGL();
 }
 
 
@@ -215,8 +257,8 @@ void ConnectFourGame::animSelector()
 void ConnectFourGame::moveSelector(Direction d)
 {
     qreal x=0.0, y=0.0, z=0.0;
-    qreal size = Settings::CubeSize;
-    qreal ef = Settings::EdgeFactor;
+    qreal size = Sett::ings().getReal("3d/cubesize");
+    qreal ef = Sett::ings().getReal("3d/edgefactor");
 
     switch (d)
     {
@@ -271,14 +313,17 @@ Player ConnectFourGame::getTurn()
     return turn;
 }
 
-
-void ConnectFourGame::putCubeOnTopOfSelector(Player state)
+void ConnectFourGame::setTurn(Player p)
 {
-    //selposx selposz = selected position
+    turn = p;
+}
 
-    //if (currentAnimationCube[0]<0 && turn==PlayerA) //<0 --> locked
-    if (currentAnimationCube[0]<0) //<-- demo version!
-    {
+
+QVector3D ConnectFourGame::putCubeOnTopOfSelector(Player state)
+{
+
+    //#if (currentAnimationCube[0]<0)
+    //#{
         //find the vertical index (in wich height will the cube be placed)
         int y=-1;
         for (int i=DIMY-1;i>=0; --i)
@@ -289,29 +334,89 @@ void ConnectFourGame::putCubeOnTopOfSelector(Player state)
 
         //if not full...
         if (y>=0)
+        {
             setCube(selPosX, y, selPosZ, state);
-
-        //no its the others turn
-        if (turn==PlayerA)
-            turn = PlayerB;
-        else turn = PlayerA;
-    }
-
-
+            return QVector3D(selPosX, y, selPosZ);
+        }
+        else return QVector3D(-1,-1,-1);
+    //#}
+    return QVector3D(-1,-1,-1);
 }
 
 
+bool ConnectFourGame::syncGameBoard(const QList<int> &syncStates)
+{
+    //could not use QMap... QVector3D is not sortable (no > <)
+    QList<QVector3D> moveL;
+    QList<int> stateL;
+
+    for (int x=0; x<DIMX; x++)
+        for (int y=0; y<DIMY; y++)
+            for (int z=0; z<DIMZ; z++)
+            {
+                if (syncStates.size()>(z*DIMX*DIMY + y*DIMX + x))
+                {
+                        if (syncStates.at(z*DIMX*DIMY + y*DIMX + x)!=logicField->get(x,y,z))
+                        {
+                            moveL.append(QVector3D(x,y,z));
+                            stateL.append(syncStates.at(z*DIMX*DIMY + y*DIMX + x));
+                        }
+                }
+            }
+
+    //no change, but ther should be change
+    if (moveL.size()==0)
+        return true;    //neverteless return true--> is just the confirmation
+
+    int t = turn;
+    if (moveL.size()==1 && stateL.at(0)==t)
+    {
+        setCube((int)moveL.at(0).x(), (int)moveL.at(0).y(), (int)moveL.at(0).z(), turn);
+        return true;
+    }
+    return false;
+}
+
+void ConnectFourGame::keyPressEvent(QKeyEvent *event)
+{
+    switch (event->key())
+    {
+    case Qt::Key_Left:  moveSelector(MINUSX); break;
+    case Qt::Key_Right: moveSelector(PLUSX); break;
+    case Qt::Key_Up: moveSelector(MINUSZ); break;
+    case Qt::Key_Down: moveSelector(PLUSZ); break;
+    case Qt::Key_Space:
+        if (getTurn()==PlayerA)
+            putCubeOnTopOfSelector(PlayerA);
+        break;
+    case Qt::Key_Shift: toggleDetails(); break;
+    case Qt::Key_Plus: scale = scale*1.2f; break;
+    case Qt::Key_Minus: scale = scale/1.2f; break;
+    }
+    updateGL();
+}
+
 void ConnectFourGame::setCube(int x, int y, int z, Player p)
 {
-    if (currentAnimationCube[0]<0 && field->get(x,y,z)->getState()==NotSet) //if <0 --> animation locked
+    //wait for animation to finish
+    //#while (currentAnimationCube[0]>=0)
+    //#    usleep(20);
+
+    //#if (currentAnimationCube[0]<0 && field->get(x,y,z)->getState()==NotSet) //if <0 --> animation locked
+    if (field->get(x,y,z)->getState()==NotSet)
     {
         PlayerCube *gp = field->get(x,y,z);
         //activate
         gp->setState(geom, p, x, y, z);
         logicField->set(p, x,y,z);
         //reset to top (twice the height of the game)
-        gp->translate(QVector3D(0, DIMY*2*Settings::CubeSize*Settings::EdgeFactor, 0));
+        //#gp->translate(QVector3D(0, DIMY*2*Sett::ings().getReal("3d/cubesize")*Sett::ings().getReal("3d/edgefactor"), 0));
 
+
+        //#
+        /*
+        if (timer!=NULL)
+            cout << "timer is NOT NULL" << endl;
 
         if (timer==NULL)
         {
@@ -326,7 +431,21 @@ void ConnectFourGame::setCube(int x, int y, int z, Player p)
             //connect to fly-in-method
             connect(timer, SIGNAL(timeout()), this, SLOT(animCubeFlyIn()));
             timer->start();
+        }*/
+
+        //change turn
+        if (turn==PlayerA)
+        {
+            turn = PlayerB;
+            emit localPlayerMoved(QVector3D(selPosX, y, selPosZ));
         }
+        else
+        {
+            turn = PlayerA;
+            emit netPlayerMoved(QVector3D(selPosX, y, selPosZ));
+        }
+
+
     }
 
 }
