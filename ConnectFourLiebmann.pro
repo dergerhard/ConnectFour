@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,7 +18,13 @@ SOURCES += main.cpp\
     graphicobjects.cpp \
     graphicpart.cpp \
     connectfourgame.cpp \
-    gameplayer.cpp
+    gameplayer.cpp \
+    settings.cpp \
+    netcommand.cpp \
+    connectfoursettings.cpp \
+    netclientcom.cpp \
+    netservercom.cpp \
+    connectfourmanagement.cpp
 
 HEADERS  += connectfourliebmann.h \
     connectfourwidget.h \
@@ -27,6 +33,19 @@ HEADERS  += connectfourliebmann.h \
     graphicobjects.h \
     graphicpart.h \
     connectfourgame.h \
-    gameplayer.h
+    gameplayer.h \
+    netcommand.h \
+    connectfoursettings.h \
+    netclientcom.h \
+    netservercom.h \
+    connectfourmanagement.h
 
 QT           += opengl
+
+OTHER_FILES += \
+    README.txt
+
+RESOURCES += \
+    images.qrc
+
+QMAKE_CXXFLAGS += -std=c++11

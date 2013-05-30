@@ -191,11 +191,11 @@ void ConnectFourLiebmann::updateGameList(const NetCommand &games)
     int count = parameters.at(0).toInt();
     if (parameters.size()>=1 && count>0)
     {
-        gameList.clear();
+        indexGameList.clear();
         for (int i=0; i<count; i++)
         {
             //stores all games from indexserver
-            gameList.append(Game(parameters.at(i*8+1).toUpper()=="OPEN" ? true :false,
+            indexGameList.append(Game(parameters.at(i*8+1).toUpper()=="OPEN" ? true :false,
                                      parameters.at(i*8+2),
                                      parameters.at(i*8+3),
                                      parameters.at(i*8+4).toInt(),
@@ -206,7 +206,7 @@ void ConnectFourLiebmann::updateGameList(const NetCommand &games)
                                      ));
 
             //append game to UI list
-            Game game = gameList.at(gameList.size()-1);
+            Game game = indexGameList.at(indexGameList.size()-1);
             QListWidgetItem *it1;
             if (game.open)
                 it1 = new QListWidgetItem(QIcon(":/images/open.xpm"), game.toGuiString());
@@ -228,7 +228,7 @@ void ConnectFourLiebmann::localPlayerMoved(const QVector3D &move)
                             .append(QString::number((int)move.z())));
 
 
-    NetCommand cmd("move", true, QString::number(glGame->getIDFromMove(move)));
+    NetCommand cmd(MOVE, QString::number(glGame->getIDFromMove(move)));
 
     if (gameState==JoinedGameInProgress)
         joinCom->sendCommand(cmd);
@@ -245,7 +245,7 @@ void ConnectFourLiebmann::netPlayerMoved(const QVector3D &move)
 
 
 
-    NetCommand cmd("synchronize_game_board", false, QString::number(glGame->DIMX*glGame->DIMY*glGame->DIMZ));
+    NetCommand cmd(SYNCHRONIZE_GAME_BOARD, QString::number(glGame->DIMX*glGame->DIMY*glGame->DIMZ));
 
     for (int x=0; x<glGame->DIMX; x++)
         for (int y=0; y<glGame->DIMY; y++)
@@ -420,7 +420,7 @@ void ConnectFourLiebmann::onBtDoHostClicked()
             Sett::ings().setString("net/playername", playerName);
             Sett::ings().setString("net/gamename", gameName);
 
-            indexCom->sendCommand(NetCommand("register_game", false, playerName, gameName, QString::number(x),QString::number(y),QString::number(z), "1.1.1.1", "80"));
+            indexCom->sendCommand(NetCommand(REGISTER_GAME, playerName, gameName, QString::number(x),QString::number(y),QString::number(z), "1.1.1.1", "80"));
             emit newGame(playerName, gameName, true, x,y,z, PlayerA);
             wLastPage.clear();
             navigation->setCurrentWidget(wGameInProgress);
@@ -446,13 +446,13 @@ void ConnectFourLiebmann::onBtDoJoinClicked()
         Game g;
         bool isGame = false;
         QString game = lwGameList->selectedItems().at(0)->text();
-        for (int i=0; i<gameList.size(); i++)
+        for (int i=0; i<indexGameList.size(); i++)
         {
-            Game tmpG = gameList.at(i);
+            Game tmpG = indexGameList.at(i);
             QString tmpS = tmpG.toGuiString();
             if (game==tmpS)
             {
-                g = gameList.at(i);
+                g = indexGameList.at(i);
                 isGame = true;
             }
         }
@@ -471,7 +471,7 @@ void ConnectFourLiebmann::onBtDoJoinClicked()
             //addGameInProgressStatus("opponents turn...");
 
             startJoinClient(g.ip, g.port);
-            joinCom->sendCommand(NetCommand("join_game", true, Sett::ings().getString("net/playername"), g.gameName, "V1"));
+            joinCom->sendCommand(NetCommand(JOIN_GAME, Sett::ings().getString("net/playername"), g.gameName, "V1"));
             gameState = GameJoinInProgress;
 
             if (QMessageBox::Yes == QMessageBox::question(this, "who will start?", "do you want to start? (or let your opponent start)", QMessageBox::Yes, QMessageBox::No))
@@ -501,7 +501,7 @@ void ConnectFourLiebmann::clearGameInProgressStatus()
 
 void ConnectFourLiebmann::netRequestGameList()
 {
-    NetCommand cmd(QString("request_game_list"), true);
+    NetCommand cmd(REQUEST_GAME_LIST);
     indexCom->sendCommand(cmd);
 }
 
@@ -786,7 +786,7 @@ void ConnectFourLiebmann::joinedGameCommandReceived(const NetCommand &cmd)
                 else
                     errorMsg = "this field is already set! game aborted";
 
-                joinCom->sendCommand(NetCommand("moved_failed", false, errorMsg));
+                joinCom->sendCommand(NetCommand(MOVED_FAILED, errorMsg));
                 emit sEndGame("your opponent sent an invalid move. the game is aborted", false);
             }
 
@@ -822,7 +822,7 @@ void ConnectFourLiebmann::joinedGameCommandReceived(const NetCommand &cmd)
             if (!glGame->syncGameBoard(states))
             {
                 emit sEndGame("board synchronisation error. the game will be closed", false);
-                hostCom->sendCommand(NetCommand("moved_failed", false, "synchronization didn't work"));
+                hostCom->sendCommand(NetCommand(MOVED_FAILED, "synchronization didn't work"));
             }
         }
         else if (msg=="update_game_board")

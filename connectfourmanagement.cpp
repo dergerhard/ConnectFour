@@ -28,7 +28,10 @@ ConnectFourManagement::ConnectFourManagement(QWidget *parent) :
     netRequestGameList();
 
     nextHostPort=Sett::ings().getInt("net/myport");
+    lePlayerName->setText(Sett::ings().getString("net/playername"));
 
+    settingsWindow = new ConnectFourSettings(this);
+    connect(settingsWindow, SIGNAL(playerNameChanged(QString)), this, SLOT(playerNameChanged(QString)));
 }
 
 
@@ -135,19 +138,28 @@ void ConnectFourManagement::createRightColumn()
 
 void ConnectFourManagement::netRequestGameList()
 {
-    NetCommand cmd(QString("request_game_list"), true);
+    NetCommand cmd(REQUEST_GAME_LIST);
     indexCom->sendCommand(cmd);
 }
 
 void ConnectFourManagement::netDeleteGame(const Game &g)
 {
-    NetCommand cmd("unregister_game", true, g.guid);
+    NetCommand cmd(UNREGISTER_GAME, g.guid);
     indexCom->sendCommand(cmd);
 }
+
+void ConnectFourManagement::playerNameChanged(const QString &playerName)
+{
+    Sett::ings().setString("net/playername", playerName);
+    lePlayerName->setText(playerName);
+}
+
 void ConnectFourManagement::onBtHostClicked()
 {
     QString gameName = leGameName->text();
     QString playerName = lePlayerName->text();
+    Sett::ings().setString("net/playername", playerName);
+
     bool *xIsInt, *yIsInt, *zIsInt;
     xIsInt = new bool; *xIsInt = false;
     yIsInt = new bool; *yIsInt = false;
@@ -167,11 +179,9 @@ void ConnectFourManagement::onBtHostClicked()
         {
             Sett::ings().setString("net/playername", playerName);
             Sett::ings().setString("net/gamename", gameName);
-            lePlayerName->setEnabled(false);
-            //TODO: for settings window as well (ip and port also can't be changed anymore)
 
             lastToBeHostedOnIndexServer = new Game(true, playerName, gameName, x,y,z, Sett::ings().getString("net/myip"), nextHostPort);
-            indexCom->sendCommand(NetCommand("register_game", false, playerName, gameName, QString::number(x),QString::number(y),QString::number(z), Sett::ings().getString("net/myip"), QString::number(nextHostPort++)));
+            indexCom->sendCommand(NetCommand(REGISTER_GAME, playerName, gameName, QString::number(x),QString::number(y),QString::number(z), Sett::ings().getString("net/myip"), QString::number(nextHostPort++)));
 
             logAddEntry(gameName + ": the game is being hosted...");
             //TODO: create a new instance of ConnectFourLiebmann, start the Host server, but do not show!
@@ -185,8 +195,9 @@ void ConnectFourManagement::onBtHostClicked()
 
 void ConnectFourManagement::onBtSettingsClicked()
 {
-    if (settingsWindow==0)
-        settingsWindow = new ConnectFourSettings(this);
+    Sett::ings().setString("net/playername", lePlayerName->text());
+    settingsWindow->loadSettingsToGUI();
+    settingsWindow->setModal(true);
     settingsWindow->show();
 }
 
@@ -201,6 +212,10 @@ void ConnectFourManagement::onBtHelpClicked()
 
 void ConnectFourManagement::onBtQuitClicked()
 {
+    for (int i=0; i<myHostedGames.size(); i++)
+    {
+        indexCom->sendCommand(NetCommand(UNREGISTER_GAME,myHostedGames.at(i).guid));
+    }
     this->close();
 }
 
@@ -263,50 +278,53 @@ void ConnectFourManagement::indexClientEnd()
 
 void ConnectFourManagement::indexClientCommandReceived(const NetCommand &cmd)
 {
-    const QString msg = cmd.getMessage();
+    //const QString msg = cmd.getMessage();
+    const CommandType type = cmd.getCommandType();
 
-    /*//no game established yet-----------------------------------------
-    if (gameState==NoGame)
-    {*/
-        if (msg=="register_success" || msg=="register_game_success")
-        {
-            lastToBeHostedOnIndexServer->guid = cmd.getParameter(0);
-            logAddEntry(lastToBeHostedOnIndexServer->gameName + ": game registred successfully. guid is " + lastToBeHostedOnIndexServer->guid);
-            logAddEntry(lastToBeHostedOnIndexServer->gameName + ": waiting for players...");
+    if (type==REGISTER_SUCCESS)
+    {
+        lastToBeHostedOnIndexServer->guid = cmd.getParameter(0);
+        logAddEntry(lastToBeHostedOnIndexServer->gameName + ": game registred successfully. guid is " + lastToBeHostedOnIndexServer->guid);
+        logAddEntry(lastToBeHostedOnIndexServer->gameName + ": waiting for players...");
 
-            myHostedGames.append(Game(lastToBeHostedOnIndexServer->open,
-                                       lastToBeHostedOnIndexServer->playerName,
-                                       lastToBeHostedOnIndexServer->gameName,
-                                       lastToBeHostedOnIndexServer->x,
-                                       lastToBeHostedOnIndexServer->y,
-                                       lastToBeHostedOnIndexServer->z,
-                                       lastToBeHostedOnIndexServer->ip,
-                                       lastToBeHostedOnIndexServer->port,
-                                       lastToBeHostedOnIndexServer->guid));
-            delete lastToBeHostedOnIndexServer;
-            lastToBeHostedOnIndexServer=0;
-            netRequestGameList();
-        }
-        else if (msg=="register_failed" || msg=="register_game_failed")
-        {
-            logAddEntry(lastToBeHostedOnIndexServer->gameName + ": registration failed. message from server: " + cmd.getParameter(0));
-        }
-        else if (msg=="answer_game_list")
-        {
-            updateGameList(cmd);
-        }
-        else if (msg=="unregister_game_failed")
-        {/*
-            QMessageBox::critical(this,
-                                 "Unregister game failed",
-                                 "Unregistring the game failed. Message from server:\n" + cmd.getParameter(0) ,
-                                 QMessageBox::Ok);*/
-            logAddEntry("Unregistration of the game failed" + cmd.getParameter(0));
-        }
-        else if (msg=="unregister_game_success")
-        {
-            logAddEntry("Game unregistred successfully");
-        }
+        myHostedGames.append(Game(lastToBeHostedOnIndexServer->open,
+                                   lastToBeHostedOnIndexServer->playerName,
+                                   lastToBeHostedOnIndexServer->gameName,
+                                   lastToBeHostedOnIndexServer->x,
+                                   lastToBeHostedOnIndexServer->y,
+                                   lastToBeHostedOnIndexServer->z,
+                                   lastToBeHostedOnIndexServer->ip,
+                                   lastToBeHostedOnIndexServer->port,
+                                   lastToBeHostedOnIndexServer->guid));
+        delete lastToBeHostedOnIndexServer;
+        lastToBeHostedOnIndexServer=0;
+        netRequestGameList();
+
+        lePlayerName->setEnabled(false);
+        settingsWindow->lockPlayerNameIPAndPort();
+
+    }
+    else if (type==REGISTER_FAILED)
+    {
+        logAddEntry(lastToBeHostedOnIndexServer->gameName + ": registration failed. message from server: " + cmd.getParameter(0));
+    }
+    else if (type==ANSWER_GAME_LIST)
+    {
+        updateGameList(cmd);
+    }
+    else if (type == UNREGISTER_GAME_FAILED)
+    {/*
+        QMessageBox::critical(this,
+                             "Unregister game failed",
+                             "Unregistring the game failed. Message from server:\n" + cmd.getParameter(0) ,
+                             QMessageBox::Ok);*/
+        logAddEntry("Unregistration of the game failed" + cmd.getParameter(0));
+    }
+    else if (type== UNREGISTER_GAME_SUCCESS)
+    {
+        logAddEntry("Game unregistred successfully");
+    }
+
     /*}
     //me == opponent---------------------------------------------------
     else if (gameState==GameJoined)

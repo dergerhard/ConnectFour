@@ -118,7 +118,7 @@ public slots:
     void indexClientLostConnection(bool comActive);
 
     void netRequestGameList();
-
+    void playerNameChanged(const QString &playerName);
 };
 
 #endif // CONNECTFOURMANAGEMENT_H

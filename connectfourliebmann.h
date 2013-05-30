@@ -38,12 +38,13 @@ struct Game
     int x=0, y=0, z=0;
     QString ip;
     int port;
+    QString guid;
 
     Game()
     {
     }
 
-    Game(bool open, QString playerName, QString gameName, int x, int y, int z, QString ip, int port)
+    Game(bool open, QString playerName, QString gameName, int x, int y, int z, QString ip, int port, QString guid="")
     {
         this->open=open;
         this->playerName=playerName;
@@ -53,6 +54,7 @@ struct Game
         this->z=z;
         this->ip=ip;
         this->port=port;
+        this->guid=guid;
     }
 
     QString toGuiString()
@@ -78,7 +80,7 @@ class ConnectFourLiebmann : public QWidget
     Q_OBJECT
 private:
 
-    QList<Game> gameList;
+    QList<Game> indexGameList;
 
     //Stacked Layout
     QStackedLayout *navigation;
