@@ -21,9 +21,6 @@ class ConnectFourSettings : public QDialog
     QLabel *lbPlayerName;
     QLineEdit *edPlayerName;
 
-    QLabel *lbGameName;
-    QLineEdit *edGameName;
-
     QLabel *lbMyIP;
     QComboBox *cbMyIP;
 
@@ -41,9 +38,12 @@ class ConnectFourSettings : public QDialog
 
 public:
     explicit ConnectFourSettings(QWidget *parent = 0);
-    
+    void lockPlayerNameIPAndPort();
+    void loadSettingsToGUI();
+
 signals:
-    
+    void playerNameChanged(const QString &playerName);
+
 public slots:
 
     void onBtSaveClicked();

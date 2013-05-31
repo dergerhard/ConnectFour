@@ -344,7 +344,7 @@ QVector3D ConnectFourGame::putCubeOnTopOfSelector(Player state)
 }
 
 
-bool ConnectFourGame::syncGameBoard(const QList<int> &syncStates)
+bool ConnectFourGame::syncGameBoard(const QList<int> &syncStates, QVector3D &move)
 {
     //could not use QMap... QVector3D is not sortable (no > <)
     QList<QVector3D> moveL;
@@ -366,13 +366,15 @@ bool ConnectFourGame::syncGameBoard(const QList<int> &syncStates)
 
     //no change, but ther should be change
     if (moveL.size()==0)
+    {
+        QVector3D(-1,-1,-1);
         return true;    //neverteless return true--> is just the confirmation
 
     int t = turn;
     if (moveL.size()==1 && stateL.at(0)==t)
     {
         setCube((int)moveL.at(0).x(), (int)moveL.at(0).y(), (int)moveL.at(0).z(), turn);
-        return true;
+        return QVector3D((int)moveL.at(0).x(), (int)moveL.at(0).y(), (int)moveL.at(0).z());
     }
     return false;
 }

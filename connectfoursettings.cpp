@@ -10,17 +10,15 @@ ConnectFourSettings::ConnectFourSettings(QWidget *parent) :
     lbPlayerName->setText("player name:");
     edPlayerName = new QLineEdit();
 
-    lbGameName = new QLabel();
-    lbGameName->setText("game name:");
-    edGameName = new QLineEdit;
 
     lbMyIP = new QLabel();
     lbMyIP->setText("my ip:");
     cbMyIP = new QComboBox();
 
     lbMyPort = new QLabel();
-    lbMyPort->setText("my port:");
+    lbMyPort->setText("my start port:");
     edMyPort = new QLineEdit;
+    edMyPort->setToolTip("if more than one game is created, the next port number will be used.");
 
     lbIndexServerIP = new QLabel();
     lbIndexServerIP->setText("index server ip:");
@@ -34,7 +32,6 @@ ConnectFourSettings::ConnectFourSettings(QWidget *parent) :
     btSave = new QPushButton("save");
 
     layout->addRow(lbPlayerName, edPlayerName);
-    layout->addRow(lbGameName, edGameName);
     layout->addRow(lbMyIP, cbMyIP);
     layout->addRow(lbMyPort, edMyPort);
     layout->addRow(lbIndexServerIP, edIndexServerIP);
@@ -56,8 +53,13 @@ ConnectFourSettings::ConnectFourSettings(QWidget *parent) :
     connect(btCancel, SIGNAL(clicked()), this, SLOT(onBtCancelClicked()));
     connect(btSave, SIGNAL(clicked()), this, SLOT(onBtSaveClicked()));
 
+    loadSettingsToGUI();
+    Sett::ings().setInt("net/mynextfreeport", Sett::ings().getInt("net/myport"));
+}
+
+void ConnectFourSettings::loadSettingsToGUI()
+{
     edPlayerName->setText(Sett::ings().getString("net/playername"));
-    edGameName->setText(Sett::ings().getString("net/gamename"));
     edMyPort->setText(QString::number(Sett::ings().getInt("net/myport")));
 
     edIndexServerIP->setText(Sett::ings().getString("net/indexip"));
@@ -81,7 +83,6 @@ void ConnectFourSettings::onBtCancelClicked()
 void ConnectFourSettings::onBtSaveClicked()
 {
     QString pName = edPlayerName->text();
-    QString gName = edGameName->text();
     QString sPort = edMyPort->text();
     QString ip = cbMyIP->currentText();
 
@@ -100,9 +101,9 @@ void ConnectFourSettings::onBtSaveClicked()
         canSaveIt=false;
         QMessageBox::information(this, "error", "the ports must be an integers!", QMessageBox::Ok);
     }
-    else if (pName.size()<=0 || gName.size()<=0)
+    else if (pName.size()<=0)
     {
-        QMessageBox::information(this, "error", "playername and gamename must be filled out!", QMessageBox::Ok);
+        QMessageBox::information(this, "error", "playername must be filled out!", QMessageBox::Ok);
     }
     else if (!indexIP.contains(QRegExp("\\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b")))
     {
@@ -111,13 +112,22 @@ void ConnectFourSettings::onBtSaveClicked()
     else
     {
         Sett::ings().setString("net/playername", pName);
-        Sett::ings().setString("net/gamename", gName);
         Sett::ings().setString("net/myip", ip);
         Sett::ings().setInt("net/myport", port);
         Sett::ings().setString("net/indexip", indexIP);
         Sett::ings().setInt("net/indexport", iPort);
+        Sett::ings().setInt("net/mynextfreeport", Sett::ings().getInt("net/myport"));
+        emit playerNameChanged(pName);
         this->close();
     }
 
+
+}
+
+void ConnectFourSettings::lockPlayerNameIPAndPort()
+{
+    edPlayerName->setEnabled(false);
+    edMyPort->setEnabled(false);
+    cbMyIP->setEnabled(false);
 
 }

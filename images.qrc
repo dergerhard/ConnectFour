@@ -1,0 +1,6 @@
+<RCC>
+    <qresource>
+        <file>images/open.xpm</file>
+        <file>images/sealed.xpm</file>
+    </qresource>
+</RCC>

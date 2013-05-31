@@ -4,19 +4,24 @@
 #include <iostream>
 #include <string>
 #include "netclientcom.h"
+#include "connectfourmanagement.h"
 
 using namespace std;
+
+
+
+
+
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    ConnectFourLiebmann w;
+    //ConnectFourLiebmann w;
+    //w.show();
 
-    w.show();
-    //w.showFullScreen();
-    
-    //ConnectFourNavigationWidget c4w;
-    //c4w.show();
+    ConnectFourManagement c4m;
+    c4m.show();
+
 
     return a.exec();
 

@@ -57,6 +57,13 @@ struct Game
         this->guid=guid;
     }
 
+    bool operator==(const Game &b)
+    {
+        if (this->gameName==b.gameName) //gameName is enought distinction (on the server every game has to have a different name)
+            return true;
+        return false;
+    }
+
     QString toGuiString()
     {
         QString game;
@@ -80,123 +87,65 @@ class ConnectFourLiebmann : public QWidget
     Q_OBJECT
 private:
 
-    QList<Game> indexGameList;
-
     //Stacked Layout
     QStackedLayout *navigation;
     QWidget *nav; //container for stacked layout
 
-    //back button
-    QPushButton *btBack;
-    QStack<QWidget*> wLastPage;
-
     //Stacked pages
-    QWidget *wInit,
-            *wHostOrJoin,
-            *wHost,
-            *wJoin,
-            *wGameInProgress;
+    QWidget *wGameInProgress;
+    QVBoxLayout *pGameInProgress;
 
-    QVBoxLayout *pInit,
-                *pHostOrJoin;
-    QFormLayout *pHost;
-    QVBoxLayout *pJoin,
-                *pGameInProgress;
-
-    //pInit
-    QPushButton *btPlayAgainstHuman,
-                *btPlayAgainstAI,
-                *btLetAIPlayAgainstNetworkPlayer,
-                *btSettings,
-                *btHelp,
-                *btQuit;
-
-    //pHostOrJoin
-    QPushButton *btHost,
-                *btJoin,
-                *btHostOrJoinBack;
-
-    //pHost
-    QLabel *lbPlayerName;
-    QLineEdit *lePlayerName;
-    QLabel *lbGameName;
-    QLineEdit *leGameName;
-    QLabel *lbDimX;
-    QLineEdit *leDimX;
-    QLabel *lbDimY;
-    QLineEdit *leDimY;
-    QLabel *lbDimZ;
-    QLineEdit *leDimZ;
-    QPushButton *btDoHost;
-    QPushButton *btHostBack;
-
-    //pJoin
-    QPushButton *btJoinBack;
-    QPushButton *btDoJoin;
-    QListWidget *lwGameList;
-    QLabel *lbGameList;
-    QWidget *wFlGameListNav;
-    QFormLayout *flGameListNav;
 
     //pGameInPrograss
     QLabel *lbGameProgressStatus;
     QListWidget *lwGameInProgressStatus;
     QPushButton *btAbortGame;
 
-    QLabel *lbNoGame;
 
     //NETWORK COMMUNICATION
-    NetClientCom *indexCom;   //communications thread for index server
     NetClientCom *joinCom;    //communications thread for the actual game
     NetServerCom *hostCom;
 
     QThread *hostServerThread;
-    QThread *indexClientThread;
     QThread *joinClientThread;
 
-    GameState gameState;
-    Protocol protocol;
+
     Game gameToBeJoined;
 
-    void updateGameList(const NetCommand &games);
-    void netRequestGameList();
     void addGameInProgressStatus(QString msg);
     void clearGameInProgressStatus();
 
-public:
-    ConnectFourLiebmann();
-    ~ConnectFourLiebmann();
+    QHBoxLayout *mainLayout;
+    QWidget *mainWidget;
+    ConnectFourGame *glGame;
 
+    const Game game;        //info about game
+    GameState gameState;    //state of the game
+    Protocol protocol;      //protocol version
+
+
+public:
+    ConnectFourLiebmann(Game gameName, GameState state);
+    ~ConnectFourLiebmann();
 
 protected:
     void keyPressEvent(QKeyEvent *event);
 
-private:
-    QVBoxLayout *statusLayout;
-    QHBoxLayout *mainLayout;
-    QWidget *mainWidget;
-    ConnectFourGame *glGame;
-    QStatusBar *statusBar;
-
 signals:
     void sEndGame(QString msg, bool yesno);
+    void joinRequestReceived(const NetCommand &cmd);
 
 public slots:
     //if glGame makes a move (local computer or human player)
     void localPlayerMoved(const QVector3D &move);
     void netPlayerMoved(const QVector3D &move);
 
-    //commands from index server
-    void indexServerCommandReceived(const NetCommand &cmd);
-    void startIndexClient();
-    void endIndexClient();
-    void lostIndexClientConnection(bool comActive);
-
     //commands from hosting server
     void joinedGameCommandReceived(const NetCommand &cmd);
-    void startJoinClient(QString ip, int port);
+    void startJoinClient();
     void endJoinClient();
     void lostJoinClientConnection(bool comActive);
+    void joinGame();
 
     //commands from client
     void hostedGameCommandReceived(const NetCommand &cmd);
@@ -204,28 +153,12 @@ public slots:
     void endHostServer();
     void lostHostServerConnection(bool comActive);
 
-    void newGame(const QString &playerName, const QString &gameName, bool state ,int x, int y, int z, Player turn);
+    void newGame(Game g, bool state);
     void endGame(QString msg, bool yesno);
     void onQuitClicked();
 
     //wInit
     void onBtQuitClicked();
-    void onBtBackClicked();
-    void onBtPlayAgainstHumanClicked();
-    void onBtPlayAgainstAIClicked();
-    void onBtLetAIPlayAgainstNetworkPlayerClicked();
-    void onBtSettingsClicked();
-    void onBtHelpClicked();
-
-    //wHostOrJoin
-    void onBtHostClicked();
-    void onBtJoinClicked();
-
-    //wHost
-    void onBtDoHostClicked();
-
-    //wJoin
-    void onBtDoJoinClicked();
 
     //wGameInProgress
     void onBtAbortGame();

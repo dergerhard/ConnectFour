@@ -80,8 +80,10 @@ class ConnectFourManagement : public QWidget
     //####MISC ######################################
     ConnectFourSettings *settingsWindow=0;
 
-    QList<Game> indexGameList;
-    QList<Game> myHostedGames;
+    QList<Game> indexGameList;  //all games on index server
+    QList<Game> myHostedGames;  //only my hosted games
+    QList<ConnectFourLiebmann*> myHostedGlGames;
+    QList<ConnectFourLiebmann*> myJoinedGlGames;
     Game *lastToBeHostedOnIndexServer=0;
     int nextHostPort;
 
@@ -116,9 +118,12 @@ public slots:
     void indexClientStart();
     void indexClientEnd();
     void indexClientLostConnection(bool comActive);
+    void indexClientCouldNotConnect();
 
     void netRequestGameList();
     void playerNameChanged(const QString &playerName);
+
+    void joinRequestReceived(const NetCommand &cmd);
 };
 
 #endif // CONNECTFOURMANAGEMENT_H

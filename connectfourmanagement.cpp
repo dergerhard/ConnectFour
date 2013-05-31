@@ -183,13 +183,37 @@ void ConnectFourManagement::onBtHostClicked()
             lastToBeHostedOnIndexServer = new Game(true, playerName, gameName, x,y,z, Sett::ings().getString("net/myip"), nextHostPort);
             indexCom->sendCommand(NetCommand(REGISTER_GAME, playerName, gameName, QString::number(x),QString::number(y),QString::number(z), Sett::ings().getString("net/myip"), QString::number(nextHostPort++)));
 
+            //start new GlGame, start listening for connections, and append to glGames list
+            //ConnectFourLiebmann *newGlGame = new ConnectFourLiebmann(g, GameJoined);
+            //newGlGame->startHostServer();
+            //connect(newGlGame, SIGNAL(joinRequestReceived(NetCommand)), this, SLOT(joinRequestReceived(NetCommand)));
+            //myHostedGlGames.append(newGlGame);
+
             logAddEntry(gameName + ": the game is being hosted...");
-            //TODO: create a new instance of ConnectFourLiebmann, start the Host server, but do not show!
-            //startHostServer();
         }
     }
     else QMessageBox::warning(this, "input error", "your input is invalid. \"game name\" and \"player name\" must be filled out, \"width\", \"height\" and \"depth\" must be numbers and greater than 0!", QMessageBox::Ok);
 
+}
+
+void ConnectFourManagement::joinRequestReceived(const NetCommand &cmd)
+{
+    if (QMessageBox::question(this, "join request", "the player \"" + cmd.getParameter(0)
+                              + "\" wants to join your game \"" + cmd.getParameter(1)
+                              + "\". do you want to play?"
+                              , QMessageBox::Yes
+                              , QMessageBox::No)==QMessageBox::Yes)
+    {
+        //find game in list
+
+        //send join_game_success
+
+        //show gui
+    }
+    else
+    {
+
+    }
 }
 
 
@@ -238,6 +262,63 @@ void ConnectFourManagement::onBtDeleteGame()
 
 void ConnectFourManagement::onBtJoinGame()
 {
+    if (lwIndexGamesList->selectedItems().size()==1)
+        {
+            Game g;
+            bool isGame = false;
+            QString game = lwIndexGamesList->selectedItems().at(0)->text();
+            int gameIndex = -1;
+            for (int i=0; i<indexGameList.size(); i++)
+            {
+                Game tmpG = indexGameList.at(i);
+                QString tmpS = tmpG.toGuiString();
+                if (game==tmpS)
+                {
+                    g = indexGameList.at(i);
+                    isGame = true;
+                    gameIndex = i;
+                }
+            }
+
+            if (!g.open)
+                QMessageBox::information(this, "error", "this game is not open. you can't join it.");
+            else
+            {
+                //gameToBeJoined = g;
+                //emit newGame(gameToBeJoined.playerName, gameToBeJoined.gameName, true, gameToBeJoined.x,gameToBeJoined.y,gameToBeJoined.z, PlayerB);
+                //WARNING: emit newGame() does not work after startJoinClient()... threading problem
+
+                ConnectFourLiebmann *newJoinGame = new ConnectFourLiebmann(g, GameJoined);
+                myJoinedGlGames.append(newJoinGame);
+                newJoinGame->startJoinClient();
+                newJoinGame->joinGame();
+                newJoinGame->show();
+
+                /*
+    mainLayout->removeWidget(lbNoGame);
+    if (glGame!=0)
+        delete glGame;
+    glGame = new ConnectFourGame(this, playerName, gameName, x,y,z, turn);
+    glGame->setState(state);
+    connect(glGame, SIGNAL(localPlayerMoved(QVector3D)), this, SLOT(localPlayerMoved(QVector3D)));
+
+    mainLayout->addWidget(glGame);
+*/
+
+                //startJoinClient(g.ip, g.port);
+                //joinCom->sendCommand(NetCommand(JOIN_GAME, Sett::ings().getString("net/playername"), g.gameName, "V1"));
+                //gameState = GameJoinInProgress;
+
+                /*if (QMessageBox::Yes == QMessageBox::question(this, "who will start?", "do you want to start? (or let your opponent start)", QMessageBox::Yes, QMessageBox::No))
+                    glGame->setTurn(PlayerA);
+                else
+                    glGame->setTurn(PlayerB);
+*/
+            }
+
+        }
+        else
+            QMessageBox::information(this, "error", "you have to select a game", QMessageBox::Ok);
 
 }
 
@@ -260,18 +341,27 @@ void ConnectFourManagement::indexClientStart()
     connect(indexClientThread, SIGNAL(started()), indexCom, SLOT(startCommunication()));
     connect(indexClientThread, SIGNAL(finished()), indexClientThread, SLOT(deleteLater()));
     connect(indexCom, SIGNAL(finished()), indexClientThread, SLOT(quit()));
-    connect(indexCom, SIGNAL(finished()), indexCom, SLOT(deleteLater()));
+    //connect(indexCom, SIGNAL(finished()), indexCom, SLOT(deleteLater()));
     connect(indexCom, SIGNAL(commandReceived(NetCommand)), this, SLOT(indexClientCommandReceived(NetCommand)), Qt::DirectConnection);
     connect(indexCom, SIGNAL(lostConnection(bool)), this, SLOT(indexClientLostConnection(bool)), Qt::QueuedConnection);
+    connect(indexCom, SIGNAL(couldNotConnect()), this, SLOT(indexClientCouldNotConnect()));
 
     indexCom->moveToThread(indexClientThread);
     indexClientThread->start();
 }
 
+void ConnectFourManagement::indexClientCouldNotConnect()
+{
+    indexClientLostConnection(true);
+}
+
 void ConnectFourManagement::indexClientEnd()
 {
     indexCom->endCommunication();
-    indexClientThread->quit();
+    //indexClientThread->quit();
+    indexClientThread->terminate();
+    indexClientThread->wait();
+
     delete indexCom;
     delete indexClientThread;
 }
@@ -393,9 +483,21 @@ void ConnectFourManagement::indexClientLostConnection(bool comActive)
 {
     if (comActive)
     {
-        QMessageBox::warning(this, "error", "lost connection to index server. the game will be closed.");
         indexClientEnd();
-        close();
+
+        if (QMessageBox::question(this, "error",
+                                  "lost connection to index server. do you want to try to reconnect?",
+                                  QMessageBox::Yes,
+                                  QMessageBox::No)==QMessageBox::Yes)
+        {
+            indexClientStart();
+        }
+        else
+        {
+            close();
+        }
+
+
     }
 
 }

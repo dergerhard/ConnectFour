@@ -34,6 +34,7 @@ signals:
     void commandReceived(const NetCommand &cmd);
     void finished();
     void lostConnection(bool comActive);
+    void couldNotConnect();
 
 public slots:
     void startCommunication();

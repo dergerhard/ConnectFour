@@ -49,6 +49,7 @@ void NetClientCom::startCommunication()
 
     if (!socket->waitForConnected(5000)) {
         cout << "Error: Could not connect to " << host.toStdString() << ":" << port << endl;
+        emit couldNotConnect();
         return;
     }
 
@@ -58,7 +59,7 @@ void NetClientCom::startCommunication()
     int i=0;
     while (comActive && socket->isOpen()) {
 
-        if (autoReconnect && (!socket->isOpen()))
+        /*if (autoReconnect && (!socket->isOpen()))
         {
             socket->connectToHost(host, port);
             cout << "RECONNECTING..." << endl;
@@ -69,7 +70,7 @@ void NetClientCom::startCommunication()
                 comActive=false;
                 cout << "Error: Could not reconnect to " << host.toStdString() << ":" << port << endl;
             }
-        }
+        }*/
 
         //read queued commands and send to host
         if (writeCmd.size()>0)
@@ -78,15 +79,22 @@ void NetClientCom::startCommunication()
             QString m = cmd.toString().append("\n");
             socket->write(m.toAscii());
             socket->flush();
-            cout << "queued cmd sent: " << cmd.toString().toStdString() << endl;
+            cout << "CLIENT CMD OUT: " << cmd.toString().toStdString() << endl;
         }
 
         //read command from host
         if (socket->waitForReadyRead(100))
         {
             QByteArray data = socket->readAll();
-            NetCommand cmd = NetCommand(QString(data.constData()));
-            emit commandReceived(cmd);
+            cout << "----" << endl << QString(data.constData()).toStdString() << "----" << endl;
+            QStringList list = QString(data.constData()).trimmed().split("\n");
+            for (int i=0; i<list.size(); i++)
+            {
+                NetCommand cmd = NetCommand(list.at(i));
+                cout << "CLIENT CMD IN : " << cmd.toString().toStdString() << endl;
+                emit commandReceived(cmd);
+            }
+
         }
     }
 

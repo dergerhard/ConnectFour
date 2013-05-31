@@ -69,4 +69,5 @@ mindestens folgende Teile zu präsentieren:
 java -cp lib/scala-library.jar:lib/scala-actors.jar:lib/4gw.jar connect4.network.server.IndexServer 9090
 java -cp lib/scala-library.jar:lib/scala-actors.jar:lib/4gw.jar connect4.network.server.GameServer game#1 4 4 1 127.0.0.1 8080 127.0.0.1 9090
 
-
+Antonius 4 Gewinnt:
+https://launchpad.net/~antoniusriha/+archive/con4

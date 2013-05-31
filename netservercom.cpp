@@ -22,7 +22,8 @@ void NetServerCom::sendCommand(NetCommand cmd)
 void NetServerCom::startListening()
 {
     QString ip = Sett::ings().getString("net/myip");
-    int port = Sett::ings().getInt("net/myport");
+    int port = Sett::ings().getInt("net/mynextfreeport");
+    Sett::ings().setInt("net/mynextfreeport", port+1);
 
     server = new QTcpServer(this);
     connect(server, SIGNAL(newConnection()), this, SLOT(startCommunication()));
